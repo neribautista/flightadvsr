@@ -1,0 +1,31 @@
+{
+  "expo": {
+    "name": "FlightAdvsr",
+    "slug": "flightadvsr",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "backgroundColor": "#0f0a00"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.yourname.flightadvsr"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#0f0a00"
+      },
+      "package": "com.yourname.flightadvsr"
+    },
+    "web": {
+      "bundler": "metro"
+    },
+    "scheme": "flightadvsr",
+    "plugins": [
+      "expo-router"
+    ]
+  }
+}
