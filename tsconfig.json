@@ -5,6 +5,12 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./*"]
-    }
-  }
+    },
+    "typeRoots": ["./node_modules/@types", "./src/types"], 
+    "esModuleInterop": true, 
+    "skipLibCheck": true, 
+    "ignoreDeprecations": "6.0" 
+  },
+  "include": ["src/**/*", "src/types/**/*"], 
+  "exclude": ["node_modules", "dist"] 
 }

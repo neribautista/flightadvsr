@@ -21,10 +21,10 @@ interface Message {
 }
 
 const QUICK_PROMPTS = [
-  'New York → London',
-  'Los Angeles → Tokyo',
-  'Dubai → Singapore',
-  'Paris → New York',
+  { label: 'New York → London',   query: 'JFK → LHR' },
+  { label: 'Los Angeles → Tokyo', query: 'LAX → NRT' },
+  { label: 'Dubai → Singapore',   query: 'DXB → SIN' },
+  { label: 'Paris → New York',    query: 'CDG → JFK' },
 ];
 
 const GREETING: Message = {
@@ -84,7 +84,7 @@ export default function ChatScreen() {
       setMessages(prev => [...prev, {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: "Sorry, I couldn't connect. Please check your API key in .env.local and try again.",
+        content: "Sorry, something went wrong. Please try again.",
         timestamp: new Date(),
       }]);
     } finally {
@@ -208,13 +208,13 @@ export default function ChatScreen() {
           >
             {QUICK_PROMPTS.map(q => (
               <TouchableOpacity
-                key={q}
+                key={q.label}
                 style={styles.quickChip}
-                onPress={() => handleSend(q)}
+                onPress={() => handleSend(q.query)}
                 activeOpacity={0.7}
               >
                 <Text style={styles.quickChipIcon}>✈</Text>
-                <Text style={styles.quickChipText}>{q}</Text>
+                <Text style={styles.quickChipText}>{q.label}</Text>
               </TouchableOpacity>
             ))}
           </ScrollView>
