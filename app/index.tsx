@@ -30,7 +30,7 @@ const QUICK_PROMPTS = [
 const GREETING: Message = {
   id: 'greeting',
   role: 'assistant',
-  content: "Hello! I'm FlightAdvsr — your global AI flight companion.\n\nTell me where you'd like to fly and I'll search flights, check visa requirements for your passport, and flag any entry restrictions along the way.\n\nWhere would you like to go?",
+  content: "Hello! I'm FlightAdvsr — your global AI flight companion.\n\nTell me where you'd like to fly and I'll search for visa requirements for your passport, and flag any entry restrictions along the way.\n\nWhere would you like to go?",
   timestamp: new Date(),
 };
 
