@@ -11,3 +11,4 @@ web-build/
 *.mobileprovision
 *.orig.*
 web-build/
+.vercel
