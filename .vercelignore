@@ -1,0 +1,28 @@
+# Ignore node_modules (not needed since Vercel installs dependencies)
+node_modules
+
+# Ignore build artifacts
+dist
+build
+web-build
+
+# Ignore environment files
+.env
+.env.local
+.env.development
+.env.production
+
+# Ignore logs
+*.log
+
+# Ignore test files
+__tests__/
+*.test.js
+*.test.ts
+*.spec.js
+*.spec.ts
+
+# Ignore IDE/editor files
+.vscode/
+.idea/
+.DS_Store
