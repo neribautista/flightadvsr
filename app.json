@@ -27,10 +27,14 @@
       "package": "com.yourname.flightadvsr"
     },
 
+    "expo":{
     "web": {
       "bundler": "metro",
-      "output": "static"
-    },
+      "output": "static",
+      "favicon": "./assets/favicon.png"
+       
+    }
+  },
 
     "scheme": "flightadvsr",
 

@@ -1,7 +1,5 @@
 // services/aiService.ts
 import passportIndex from '../data/passportIndex.json';
-import airportCodes from 'airport-codes';
-import countries from 'i18n-iso-countries';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -71,6 +69,9 @@ const IATA_FALLBACK: Record<string, string> = {
   IAH: 'US', EWR: 'US', MSP: 'US', DTW: 'US', PHL: 'US', CLT: 'US',
   YYZ: 'CA', YVR: 'CA', YUL: 'CA', YYC: 'CA',
   MEX: 'MX', CUN: 'MX', GDL: 'MX',
+  AUS: 'US', SAN: 'US', PDX: 'US', SLC: 'US', MSY: 'US', RSW: 'US',
+  RDU: 'US', BNA: 'US', IND: 'US', CMH: 'US', PIT: 'US', MCI: 'US',
+  OAK: 'US', SJC: 'US', SMF: 'US', ABQ: 'US', TUS: 'US',
 
   // Europe
   LHR: 'GB', LGW: 'GB', MAN: 'GB', EDI: 'GB', BHX: 'GB',
@@ -253,23 +254,9 @@ const COUNTRY_NAME_MAP: Record<string, string> = {
 
 function getCountryFromIATA(iata: string): string | null {
   const code = iata.toUpperCase();
-
-  try {
-    const airport = airportCodes.findWhere({ iata: code });
-    if (airport) {
-      const countryName = airport.get('country');
-      const iso2 = countries.getAlpha2Code(countryName, 'en');
-      if (iso2) return iso2;
-    }
-  } catch (e) {
-    console.warn(`airport-codes lookup failed for ${code}:`, e);
-  }
-
-  const fallback = IATA_FALLBACK[code];
-  if (fallback) return fallback;
-
-  console.warn(`Could not resolve country for IATA code: ${code}`);
-  return null;
+  const country = IATA_FALLBACK[code];
+  if (!country) console.warn(`Could not resolve country for IATA code: ${code}`);
+  return country ?? null;
 }
 
 function getCountryFromText(text: string): string | null {
@@ -298,8 +285,9 @@ interface ParsedRoute {
 }
 
 function parseRoute(text: string): ParsedRoute | null {
-  // 1. IATA code pattern: "JFK → LHR", "LAX -> NRT", "LAX to NRT"
-  const iataMatch = text.match(/([A-Za-z]{3})\s*(?:→|->|to)\s*([A-Za-z]{3})/i);
+  // 1. IATA pair: "JFK → LHR", "LAX -> NRT", "PHL to AUS", "fly from PHL to AUS"
+  //    Handles optional "from" before the origin code
+  const iataMatch = text.match(/(?:from\s+)?([A-Za-z]{3})\s*(?:→|->|to)\s*([A-Za-z]{3})/i);
   if (iataMatch) {
     const [, from, to] = iataMatch;
     const fromCountry = getCountryFromIATA(from);
@@ -315,7 +303,18 @@ function parseRoute(text: string): ParsedRoute | null {
     }
   }
 
-  // 2. Natural language: "I want to go to Japan", "fly to London", "trip to Thailand"
+  // 2. "fly from Philadelphia to Australia" — extract destination after last "to"
+  const fromToMatch = text.match(/\bfrom\s+[a-zA-Z\s]+?\s+to\s+([a-zA-Z][a-zA-Z\s]{2,28})(?:\s+on\b|\s+in\b|\s+for\b|\s*[,.]|$)/i);
+  if (fromToMatch) {
+    const destText = fromToMatch[1].trim();
+    const toCountry = getCountryFromText(destText);
+    if (toCountry) {
+      console.log(`parseRoute (from-to): destination="${destText}" → ${toCountry}`);
+      return { fromIATA: '???', toIATA: toCountry, fromCountry: '??', toCountry };
+    }
+  }
+
+  // 3. Natural language: "I want to fly to Tokyo", "trip to Thailand"
   const nlMatch = text.match(
     /(?:go(?:ing)?\s+to|fly(?:ing)?\s+to|travel(?:l?ing)?\s+to|trip\s+to|visit(?:ing)?|heading\s+to|want\s+to\s+(?:go|fly|travel)\s+to)\s+([a-zA-Z\s]+?)(?:\s+on\b|\s+in\b|\s+from\b|\s+for\b|\s*[,.]|$)/i
   );
@@ -328,7 +327,7 @@ function parseRoute(text: string): ParsedRoute | null {
     }
   }
 
-  // 3. Simple "to [place]" fallback
+  // 4. Simple "to [place]" fallback
   const simpleMatch = text.match(/\bto\s+([a-zA-Z][a-zA-Z\s]{2,28})(?:\s+on\b|\s+in\b|\s+from\b|\s+for\b|\s*[,.]|$)/i);
   if (simpleMatch) {
     const destText = simpleMatch[1].trim();
@@ -379,6 +378,19 @@ export async function sendMessage(
     return {
       message:
         "I can help you check visa requirements and find flights! Try:\n\n• Airport codes: JFK → LHR\n• City names: \"I want to fly to Tokyo\"\n• Countries: \"trip to Japan\"\n\nWhat's your destination?",
+    };
+  }
+
+  // Detect domestic route (same country on both ends)
+  const isDomestic =
+    route.fromCountry !== '??' &&
+    route.toCountry !== '??' &&
+    route.fromCountry === route.toCountry;
+
+  if (isDomestic) {
+    return {
+      message: `${route.fromIATA} to ${route.toIATA} is a domestic route within ${route.fromCountry} — no visa or passport required! You'll just need a valid government-issued ID to fly.`,
+      flights: [],
     };
   }
 
