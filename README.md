@@ -19,7 +19,7 @@ Instead of manually searching embassy websites or third-party visa checkers, use
 - Provides an **AI chat assistant** built into the dashboard for natural language travel queries
 - Displays **flight cards** with pricing, duration, stops, and booking links
 
-**Live App:** https://flightadvsr.vercel.app/  
+**Live App:** https://flightadvsr-app.vercel.app/
 **GitHub:** https://github.com/neribautista/flightadvsr
 
 ---
