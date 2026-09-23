@@ -21,7 +21,7 @@ import {
   askVisaAssistant,
   type VisaChatMessage,
 } from '../../services/aiService';
-import { openAirlineBooking } from '../../services/flightService';
+import { openFlightBooking } from '../../services/flightService';
 import type {
   FlightItinerary,
   VisaRequirement,
@@ -153,6 +153,11 @@ export default function Results() {
   }
 
   const primaryFlight = result.primaryFlight;
+
+  // Opens Google Flights on this exact itinerary so the traveler doesn't have
+  // to search again before booking with the airline.
+  const bookFlight = (flight: FlightItinerary) =>
+    openFlightBooking(flight, tripDetails, preferences, result.currency);
   const firstSegment = primaryFlight.segments[0];
   const lastSegment =
     primaryFlight.segments[primaryFlight.segments.length - 1];
@@ -316,9 +321,9 @@ export default function Results() {
 
             <TouchableOpacity
               style={styles.primary}
-              onPress={() => openAirlineBooking(primaryFlight)}
+              onPress={() => bookFlight(primaryFlight)}
             >
-              <Text style={styles.primaryText}>Book with airline</Text>
+              <Text style={styles.primaryText}>Continue to booking</Text>
 
               <Ionicons
                 name="open-outline"
@@ -340,9 +345,9 @@ export default function Results() {
           ))}
 
           <Text style={styles.disclaimer}>
-            You will be sent to the operating airline’s official website.
-            Re-enter the route, dates, and flight number to confirm the current
-            fare.
+            Opens Google Flights with this flight, date, and cabin already
+            selected. Choose a booking option to continue to the airline and
+            confirm the current fare.
           </Text>
         </View>
 
@@ -651,6 +656,7 @@ export default function Results() {
               key={flight.id}
               flight={flight}
               currency={result.currency}
+              onBook={() => bookFlight(flight)}
             />
           ))}
         </Card>
@@ -696,9 +702,11 @@ function Card({
 function FlightRow({
   flight,
   currency,
+  onBook,
 }: {
   flight: FlightItinerary;
   currency: string;
+  onBook: () => void;
 }) {
   const firstSegment = flight.segments[0];
   const lastSegment =
@@ -744,7 +752,7 @@ function FlightRow({
         </Text>
 
         <TouchableOpacity
-          onPress={() => openAirlineBooking(flight)}
+          onPress={onBook}
         >
           <Text style={styles.bookLink}>Book</Text>
         </TouchableOpacity>

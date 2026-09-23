@@ -18,6 +18,7 @@ import StepProgress from '@/components/onboarding/StepProgress';
 import CalendarDatePicker from '@/components/onboarding/CalendarDatePicker';
 import { useTrip } from '../../context/TripContenxt';
 import { AirportSelection } from '@/types/trip';
+import { POPULAR_AIRPORTS, searchAirports } from '@/data/airports';
 
 const BLUE = '#2478f3';
 const NAVY = '#102747';
@@ -27,62 +28,13 @@ const BG = '#f8fbff';
 const ERROR = '#dc3545';
 const GREEN = '#34b862';
 
-const airportOptions: AirportSelection[] = [
-  {
-    code: 'DFW',
-    city: 'Dallas',
-    country: 'United States',
-    label: 'Dallas Fort Worth International Airport (DFW)',
-  },
-  {
-    code: 'AUS',
-    city: 'Austin',
-    country: 'United States',
-    label: 'Austin-Bergstrom International Airport (AUS)',
-  },
-  {
-    code: 'JFK',
-    city: 'New York',
-    country: 'United States',
-    label: 'John F. Kennedy International Airport (JFK)',
-  },
-  {
-    code: 'LAX',
-    city: 'Los Angeles',
-    country: 'United States',
-    label: 'Los Angeles International Airport (LAX)',
-  },
-  {
-    code: 'NRT',
-    city: 'Tokyo',
-    country: 'Japan',
-    label: 'Tokyo Narita International Airport (NRT)',
-  },
-  {
-    code: 'HND',
-    city: 'Tokyo',
-    country: 'Japan',
-    label: 'Tokyo Haneda Airport (HND)',
-  },
-  {
-    code: 'SIN',
-    city: 'Singapore',
-    country: 'Singapore',
-    label: 'Singapore Changi Airport (SIN)',
-  },
-  {
-    code: 'MNL',
-    city: 'Manila',
-    country: 'Philippines',
-    label: 'Ninoy Aquino International Airport (MNL)',
-  },
-  {
-    code: 'DPS',
-    city: 'Bali',
-    country: 'Indonesia',
-    label: 'Ngurah Rai International Airport (DPS)',
-  },
-];
+// Shown in the route overview until the user has picked an airport.
+const UNSELECTED_AIRPORT: AirportSelection = {
+  code: '---',
+  city: 'Not selected',
+  country: '',
+  label: 'Not selected',
+};
 
 type ErrorFields =
   | 'destination'
@@ -109,31 +61,37 @@ export default function TripScreen() {
   const [currencyOpen, setCurrencyOpen] =
     useState(false);
 
+  const [stopPickerOpen, setStopPickerOpen] =
+    useState(false);
+
+  const [stopQuery, setStopQuery] = useState('');
+
   const [errors, setErrors] = useState<
     Partial<Record<ErrorFields, string>>
   >({});
 
   const filteredDestinations = useMemo(() => {
-    const query = destinationQuery.trim().toLowerCase();
+    const exclude = travelerData.origin
+      ? [travelerData.origin.code]
+      : [];
 
-    if (!query) {
-      return airportOptions.slice(0, 6);
+    if (!destinationQuery.trim()) {
+      return POPULAR_AIRPORTS.filter(
+        (airport) => !exclude.includes(airport.code),
+      ).slice(0, 8);
     }
 
-    return airportOptions.filter((airport) => {
-      return (
-        airport.label.toLowerCase().includes(query) ||
-        airport.city.toLowerCase().includes(query) ||
-        airport.code.toLowerCase().includes(query)
-      );
+    return searchAirports(destinationQuery, {
+      exclude,
+      limit: 8,
     });
-  }, [destinationQuery]);
+  }, [destinationQuery, travelerData.origin]);
 
   const origin =
-    travelerData.origin ?? airportOptions[0];
+    travelerData.origin ?? UNSELECTED_AIRPORT;
 
   const destination =
-    tripDetails.destination ?? airportOptions[4];
+    tripDetails.destination ?? UNSELECTED_AIRPORT;
 
   const durationDays = useMemo(() => {
     if (
@@ -181,29 +139,36 @@ export default function TripScreen() {
     }));
   };
 
-  const addStop = () => {
-    const existingCodes =
-      tripDetails.additionalStops.map(
+  const stopResults = useMemo(() => {
+    const exclude = [
+      origin.code,
+      destination.code,
+      ...tripDetails.additionalStops.map(
         (stop) => stop.code,
-      );
+      ),
+    ];
 
-    const nextStop = airportOptions.find(
-      (airport) =>
-        airport.code !== origin.code &&
-        airport.code !== destination.code &&
-        !existingCodes.includes(airport.code),
-    );
+    return searchAirports(stopQuery, {
+      exclude,
+      limit: 8,
+    });
+  }, [
+    stopQuery,
+    origin.code,
+    destination.code,
+    tripDetails.additionalStops,
+  ]);
 
-    if (!nextStop) {
-      return;
-    }
-
+  const addStop = (airport: AirportSelection) => {
     updateTripDetails({
       additionalStops: [
         ...tripDetails.additionalStops,
-        nextStop,
+        airport,
       ],
     });
+
+    setStopQuery('');
+    setStopPickerOpen(false);
   };
 
   const removeStop = (code: string) => {
@@ -381,7 +346,7 @@ export default function TripScreen() {
                       });
                     }
                   }}
-                  placeholder="Search city or airport"
+                  placeholder="Search city, country or airport code"
                   placeholderTextColor="#9ba8b8"
                 />
 
@@ -445,21 +410,80 @@ export default function TripScreen() {
               icon="add-circle-outline"
               label="Would you like to visit another country?"
             >
-              <TouchableOpacity
-                activeOpacity={0.8}
-                style={styles.addStopButton}
-                onPress={addStop}
-              >
-                <Ionicons
-                  name="add"
-                  size={18}
-                  color={BLUE}
-                />
+              {stopPickerOpen ? (
+                <>
+                  <View style={styles.inputButton}>
+                    <TextInput
+                      style={styles.input}
+                      value={stopQuery}
+                      onChangeText={setStopQuery}
+                      placeholder="Search city, country or airport code"
+                      placeholderTextColor="#9ba8b8"
+                      autoFocus
+                    />
 
-                <Text style={styles.addStopText}>
-                  Add stop
-                </Text>
-              </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => {
+                        setStopQuery('');
+                        setStopPickerOpen(false);
+                      }}
+                    >
+                      <Ionicons
+                        name="close"
+                        size={18}
+                        color={MUTED}
+                      />
+                    </TouchableOpacity>
+                  </View>
+
+                  {stopResults.length > 0 && (
+                    <View style={styles.dropdown}>
+                      {stopResults.map((airport) => (
+                        <TouchableOpacity
+                          key={airport.code}
+                          activeOpacity={0.75}
+                          style={styles.dropdownOption}
+                          onPress={() => addStop(airport)}
+                        >
+                          <View style={styles.airportIcon}>
+                            <Ionicons
+                              name="airplane-outline"
+                              size={17}
+                              color={BLUE}
+                            />
+                          </View>
+
+                          <View style={styles.airportCopy}>
+                            <Text style={styles.airportLabel}>
+                              {airport.city} ({airport.code})
+                            </Text>
+
+                            <Text style={styles.airportCountry}>
+                              {airport.country}
+                            </Text>
+                          </View>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  )}
+                </>
+              ) : (
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  style={styles.addStopButton}
+                  onPress={() => setStopPickerOpen(true)}
+                >
+                  <Ionicons
+                    name="add"
+                    size={18}
+                    color={BLUE}
+                  />
+
+                  <Text style={styles.addStopText}>
+                    Add stop
+                  </Text>
+                </TouchableOpacity>
+              )}
 
               {tripDetails.additionalStops.length >
                 0 && (
@@ -472,7 +496,7 @@ export default function TripScreen() {
                       >
                         <Text style={styles.stopText}>
                           {index + 1}. {stop.city} (
-                          {stop.code})
+                          {stop.code}), {stop.country}
                         </Text>
 
                         <TouchableOpacity

@@ -1,10 +1,8 @@
 import { Linking } from 'react-native';
+import { getGoogleFlightsUrl } from './googleFlightsLink';
 import type { AirportMetadata, FlightItinerary, PriceInsights, TripDetails, TripPreferences, TravelerData } from '../types/trip';
 
 const ENDPOINT = 'https://api.scrape.do/plugin/google/flights';
-const AIRLINE_URLS: Record<string, string> = {
-  AA:'https://www.aa.com/', DL:'https://www.delta.com/', UA:'https://www.united.com/', EK:'https://www.emirates.com/', QR:'https://www.qatarairways.com/', SQ:'https://www.singaporeair.com/', JL:'https://www.jal.co.jp/', NH:'https://www.ana.co.jp/', PR:'https://www.philippineairlines.com/', CX:'https://www.cathaypacific.com/', AC:'https://www.aircanada.com/', BA:'https://www.britishairways.com/', LH:'https://www.lufthansa.com/', AF:'https://www.airfrance.com/', KL:'https://www.klm.com/', QF:'https://www.qantas.com/', B6:'https://www.jetblue.com/', WN:'https://www.southwest.com/'
-};
 
 type RawAirportTime = { name:string; id:string; time:string };
 type RawSegment = { departure_airport:RawAirportTime; arrival_airport:RawAirportTime; duration:number; airplane?:string; airline:string; airline_logo?:string; travel_class?:string; flight_number:string; legroom?:string; extensions?:string[]; overnight?:boolean };
@@ -38,5 +36,4 @@ export async function searchRealFlights(traveler:TravelerData, trip:TripDetails,
   return { bestFlights:(data.best_flights??[]).map((x,i)=>mapItinerary(x,'best',i)), otherFlights:(data.other_flights??[]).map((x,i)=>mapItinerary(x,'other',i)), priceInsights:{lowestPrice:data.price_insights?.lowest_price,priceLevel:data.price_insights?.price_level,typicalPriceRange:data.price_insights?.typical_price_range?.length===2?data.price_insights.typical_price_range as [number,number]:undefined,priceHistory:data.price_insights?.price_history??[]}, airports:{departure:(airportGroup?.departure??[]).map(mapAirport),arrival:(airportGroup?.arrival??[]).map(mapAirport)} };
 }
 
-export function getAirlineBookingUrl(itinerary:FlightItinerary):string{ const first=itinerary.segments[0]; if(!first) return 'https://www.google.com/travel/flights'; return AIRLINE_URLS[first.airlineCode]||`https://www.google.com/search?q=${encodeURIComponent(`${first.airline} official website`)}`; }
-export async function openAirlineBooking(itinerary:FlightItinerary){ await Linking.openURL(getAirlineBookingUrl(itinerary)); }
+export async function openFlightBooking(itinerary:FlightItinerary, trip:TripDetails, prefs:TripPreferences, currency:string){ await Linking.openURL(getGoogleFlightsUrl(itinerary,trip,prefs,currency)); }
