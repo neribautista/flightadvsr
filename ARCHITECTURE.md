@@ -20,4 +20,4 @@ For production, proxy both APIs through a backend or serverless function. Values
 
 ## Booking behavior
 
-Scrape.do currently provides listing data and an opaque `booking_token`, but does not expose booking-flow expansion. The app therefore opens the operating airline's official website. The traveler must confirm the flight number, route, dates, fare, and availability there.
+Scrape.do provides listing data and an opaque `booking_token`, but does not expose booking-flow expansion. Instead, `services/googleFlightsLink.ts` builds a Google Flights link that preselects the recommended flights, dates, cabin, and passengers. One-way trips land on that flight's booking options; round trips land with the outbound selected. See `FLIGHT-API-NOTES.md` for details and fallbacks.

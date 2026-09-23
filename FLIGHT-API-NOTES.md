@@ -4,6 +4,12 @@ The onboarding analysis now calls `GET https://api.scrape.do/plugin/google/fligh
 
 Set `EXPO_PUBLIC_SCRAPE_DO_TOKEN` in `.env.local`, then restart Expo with `npx expo start -c`.
 
-Important limitation: Scrape.do returns a `booking_token`, but its current Flights API documentation says fare-detail / booking-flow expansion is not exposed. Therefore the app opens the operating airline's official website rather than pretending it has an exact itinerary deep link. When Scrape.do exposes booking expansion, `getAirlineBookingUrl()` in `services/flightService.ts` is the one place to replace.
+Booking links: Scrape.do returns a `booking_token`, but it doesn't expose Google's booking-options call, so we can't get the airline's checkout URL directly. Instead, `services/googleFlightsLink.ts` builds a Google Flights link (`tfs` parameter) that preselects the recommended flight numbers, dates, cabin and passenger count:
+
+- One-way trips open Google Flights' "Booking options" page for that exact flight; one click continues to the airline's checkout.
+- Round trips open with the outbound flight selected; the traveler picks a return, then books.
+- If a segment's flight number or date can't be parsed, the link falls back to a prefilled search for the same route, dates, cabin and passengers.
+
+The `tfs` format is undocumented and could change. If links start landing on Google's "itinerary no longer available" page, check the encoding there first.
 
 For production, do not keep the Scrape.do token in an `EXPO_PUBLIC_` variable. Put the API call behind a serverless/backend endpoint so users cannot extract the token from the app bundle.

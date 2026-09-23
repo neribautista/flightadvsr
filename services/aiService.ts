@@ -663,6 +663,11 @@ Documents to prepare:
 ✓ [document]
 ⚠ [warning only when needed]
 
+Other airlines or alternative flights question:
+List up to 3 options from displayedJourneyResult.alternativeFlights,
+one per line: [airline] [flight number] - [price] - [stops] - [duration].
+If there are no alternatives, say so and suggest changing dates or stops.
+
 Flight question:
 Recommendation: [short answer]
 Reason: [price, duration, stops, visa simplicity, or connection quality]
@@ -675,12 +680,13 @@ ${buildOnboardingTripContext(context)}
 
 function cleanAssistantResponse(value: string): string {
   return value
-    .replace(/```[\s\S]*?```/g, '')
+    .replace(/```[a-z]*\n?/gi, '')
     .replace(/^#{1,6}\s*/gm, '')
+    .replace(/^\s*\*\s+/gm, '- ')
     .replace(/\*\*(.*?)\*\*/g, '$1')
     .replace(/__(.*?)__/g, '$1')
     .replace(/\*(.*?)\*/g, '$1')
-    .replace(/_(.*?)_/g, '$1')
+    .replace(/\b_(.*?)_\b/g, '$1')
     .replace(/`([^`]+)`/g, '$1')
     .replace(/^\s*[-•]\s+/gm, '✓ ')
     .replace(/\n{3,}/g, '\n\n')
@@ -690,22 +696,32 @@ function cleanAssistantResponse(value: string): string {
 function readGeminiResponse(payload: unknown): string {
   const candidatePayload = payload as {
     candidates?: Array<{
+      finishReason?: string;
       content?: {
-        parts?: Array<{ text?: string }>;
+        parts?: Array<{ text?: string; thought?: boolean }>;
       };
     }>;
   };
 
-  const parts = candidatePayload.candidates?.[0]?.content?.parts;
+  const candidate = candidatePayload.candidates?.[0];
+  const parts = candidate?.content?.parts;
 
   if (!Array.isArray(parts)) {
     return '';
   }
 
-  const text = parts
+  let text = parts
+    .filter((part) => !part.thought)
     .map((part) => part.text ?? '')
     .join('')
     .trim();
+
+  // If the model ran out of tokens, drop the unfinished last line rather
+  // than showing the traveler a sentence fragment.
+  if (candidate?.finishReason === 'MAX_TOKENS') {
+    const lines = text.split('\n');
+    text = lines.length > 1 ? lines.slice(0, -1).join('\n').trim() : '';
+  }
 
   return cleanAssistantResponse(text);
 }
@@ -799,7 +815,10 @@ export async function askVisaAssistant(
         })),
         generationConfig: {
           temperature: 0.1,
-          maxOutputTokens: 180,
+          // Gemini 2.5+/3.x "thinking" models spend part of this budget on
+          // internal reasoning before answering; 180 left almost nothing for
+          // the reply. Answer length is capped by the system prompt instead.
+          maxOutputTokens: 2048,
           topP: 0.8,
           topK: 20,
         },

@@ -1,4 +1,4 @@
-# FlightAdvsr — AI-Powered Travel Intelligence App
+# FlightADVSR — AI-Powered Travel Planner
 
 **Student:** Neri Bautista  
 **Course:** Practical Submission — SPARE (25 pts)  
@@ -9,17 +9,19 @@
 
 ## 🛫 What I Built
 
-**FlightAdvsr** is a full-stack AI-powered travel intelligence web/mobile application that helps travelers check visa requirements, flight routes, and entry restrictions in real time — all based on their passport nationality.
+**FlightADVSR** is an AI-powered travel planner for web and mobile. It finds live flights for your trip, checks visa and entry requirements for your passport, and recommends the itinerary that balances price, travel time, connections, and visa simplicity — all before you book.
 
-Instead of manually searching embassy websites or third-party visa checkers, users simply type a route like `JFK to Tokyo` or `PHL to AUS` and FlightAdvsr instantly:
+Travelers answer a short guided planner (passport, route, dates, budget, and preferences). FlightADVSR then:
 
-- Detects whether the route is **domestic or international**
-- Checks **visa requirements** for the user's passport (190+ countries)
-- Flags **layover transit visa rules** (e.g. a US passport holder transiting Dubai)
-- Provides an **AI chat assistant** built into the dashboard for natural language travel queries
-- Displays **flight cards** with pricing, duration, stops, and booking links
+- Searches **live fares** for the route, dates, cabin, and number of travelers
+- Checks **visa requirements** for the destination and every planned stop, based on the traveler's passport (199 passports)
+- Picks a **FlightADVSR Pick** and explains *why* it was chosen
+- Flags **travel alerts** such as visa action needed, tight or very long connections, and going over budget
+- Builds a **pre-flight checklist** of documents to prepare
+- Answers follow-up questions in a **Gemini-powered Trip Assistant** that knows the traveler's itinerary
+- Opens **Google Flights on the exact recommended flight** so the traveler can book without searching again
 
-**Live App:** https://flightadvsr-app.vercel.app/
+**Live App:** https://flightadvsr-app.vercel.app/  
 **GitHub:** https://github.com/neribautista/flightadvsr
 
 ---
@@ -28,14 +30,59 @@ Instead of manually searching embassy websites or third-party visa checkers, use
 
 | Category | Technology |
 |----------|-----------|
-| Framework | React Native + Expo (web + mobile) |
+| Framework | React Native + Expo SDK 51 (web + mobile) |
 | Language | TypeScript |
 | Routing | Expo Router (file-based routing) |
-| AI Integration | Anthropic Claude API (claude-sonnet) |
-| Deployment | Vercel (free tier) |
-| Styling | React Native StyleSheet |
-| Data | Passport Index JSON (190+ countries) |
+| AI | Google Gemini API (Trip Assistant) |
+| Live flights | Scrape.do Google Flights API |
+| Airport data | OpenFlights via `airport-codes` (≈5,500 airports in 230 countries) |
+| Country data | `i18n-iso-countries` + local Passport Index JSON (199 passports) |
+| Graphics | `react-native-svg`, `expo-linear-gradient`, `@expo/vector-icons` |
+| State | React Context (`TripContext`) |
+| Deployment | Vercel (static Expo web export) |
 | Package Manager | npm |
+
+---
+
+## ✨ Key Features
+
+### 1. Homepage
+A landing page that introduces FlightADVSR, compares it with Google Flights (visa checks, transit visa info, entry rules, route suggestions, alerts), and leads into the trip planner.
+
+### 2. Guided Trip Planner (4 steps)
+1. **Traveler** — passport country, visas already held, departure airport, and trip type.
+2. **Trip** — destination, optional extra stops, round-trip or one-way, dates, number of travelers, total budget and currency, and notes.
+3. **Preferences** — cabin class, route priority (best value, lowest price, shortest duration), preferred departure time, preferred and avoided airlines, maximum stops and layover length, checked baggage, flexible dates, hotel recommendations, and accessibility needs.
+4. **Results** — the recommended journey (see below).
+
+A live preview panel summarizes the trip as it's being built.
+
+### 3. Worldwide Airport Search
+Departure, destination, and extra-stop fields search ≈5,500 airports in 230 countries by **city, country, airport name, or IATA code**. Major hubs rank first (typing "Kenya" suggests Nairobi, "Peru" suggests Lima), and common short names like "UK", "USA", and "UAE" work. Extra stops are chosen by the traveler — nothing is added automatically.
+
+### 4. Live Flight Search & Analysis
+The analyzing screen runs the live flight search straight away. Cabin class, number of travelers, stop limits, dates, and currency are applied to the search. The checklist on screen tracks the real search and redirects to results as soon as all checks are complete.
+
+### 5. FlightADVSR Pick (Explainable Recommendation)
+Every returned itinerary is ranked on price, total duration, number of stops, layovers longer than the traveler's limit, carbon emissions, and visa simplicity. The results page shows the pick with up to five plain-language reasons (for example "Strong value — only $639 more than the cheapest option", "1 connection — SFO 3h 5m", "Lower emissions"), plus other live flight options.
+
+### 6. Visa & Entry Checks
+Visa status for the destination and every planned stop is looked up from the local passport dataset (visa-free, visa on arrival, eVisa/ETA, or visa required), with the allowed stay where known. Results link visa warnings to travel alerts and the checklist, and always advise confirming with official government sources.
+
+### 7. Travel Alerts & Pre-Flight Checklist
+- **Alerts:** visa action needed, tight connections (under 75 minutes), long layovers (over 8 hours), and fares above the stated budget.
+- **Checklist:** passport, visa or travel authorization, onward or return ticket, accommodation confirmation, travel insurance, and baggage allowance.
+
+### 8. Trip Assistant (Gemini)
+A chat on the results page that answers questions using the traveler's passport, visas, route, layovers, visa results, and flights shown on the page. Quick topics cover **Visa**, **Transit**, **Documents**, and **Flight**, and it can list alternative airlines from the live results. Answers are short, plain text, and never guarantee entry or boarding.
+
+### 9. Book Without Searching Again
+**Continue to booking** opens Google Flights with the recommended flight, date, cabin, and travelers already selected:
+- **One-way:** lands on the booking options page for that exact flight, one click from the airline's checkout.
+- **Round trip:** the outbound flight is preselected; the traveler picks a return and books.
+
+### 10. Dashboard & Quick Visa Lookup
+**Save & exit** in the planner opens a dashboard with a quick chat for route questions like `JFK to Tokyo` or `PHL to AUS`. It detects domestic vs. international routes and returns the visa status for the selected passport.
 
 ---
 
@@ -44,44 +91,36 @@ Instead of manually searching embassy websites or third-party visa checkers, use
 ```
 flightadvsr-app/
 ├── app/
-│   ├── index.tsx          # Main dashboard screen (sidebar, stats, flight cards, AI chat)
-│   ├── _layout.tsx        # Root layout with Expo Router Stack
-│   └── +not-found.tsx     # 404 fallback route
+│   ├── index.tsx              # Homepage
+│   ├── dashboard.tsx          # Dashboard with quick visa-lookup chat
+│   ├── _layout.tsx            # Root layout (Expo Router stack + TripProvider)
+│   ├── +not-found.tsx         # 404 fallback route
+│   └── onboarding/
+│       ├── traveler.tsx       # Step 1: passport, visas, departure airport, trip type
+│       ├── trip.tsx           # Step 2: destination, stops, dates, travelers, budget
+│       ├── preferences.tsx    # Step 3: cabin, priority, airlines, stops, essentials
+│       ├── analyzing.tsx      # Live search + analysis progress
+│       └── results.tsx        # FlightADVSR Pick, visa, alerts, checklist, Trip Assistant
 ├── components/
-│   ├── FlightCard.tsx     # Flight result card with visa pill badges
-│   ├── VisaBanner.tsx     # Destination visa status banner
-│   └── PassportSelector.tsx  # Country passport picker modal
+│   ├── Scenery.tsx            # SVG mountain/plane illustration on the homepage
+│   ├── onboarding/            # Step progress bar and calendar date picker
+│   └── FlightCard.tsx, VisaBanner.tsx, PassportSelector.tsx  # Dashboard components
+├── context/
+│   └── TripContenxt.tsx       # Shared trip state across the planner
 ├── services/
-│   └── aiService.ts       # Core AI service: route parsing, visa lookup, message handling
+│   ├── flightService.ts       # Scrape.do Google Flights search
+│   ├── journeyService.ts      # Recommendation, reasons, alerts, checklist
+│   ├── aiService.ts           # Visa lookups + Gemini Trip Assistant
+│   └── googleFlightsLink.ts   # Google Flights link to the exact recommended flight
 ├── data/
-│   └── passportIndex.json # Passport visa data for 190+ countries
-├── constants/
-│   └── theme.ts           # Global color tokens and design system
-└── README.md
+│   ├── airports.json / .ts    # Worldwide airport list + search
+│   ├── countries.ts           # Passport country options
+│   └── passportIndex.json     # Visa rules for 199 passports
+├── scripts/
+│   └── build-airports.js      # Regenerates data/airports.json
+├── screenshots/               # README screenshots
+└── types/trip.ts              # Shared TypeScript types
 ```
-
----
-
-## ✨ Key Features
-
-### 1. AI Chat Assistant
-Integrated directly into the dashboard via a floating chat button. Users can ask in plain English:
-- `"PHL to AUS"` → detects domestic US route, no visa needed
-- `"JFK to Tokyo"` → returns visa-free status for US passport, 90 days
-- `"fly from Manila to Dubai"` → returns visa on arrival info for PH passport
-
-### 2. Passport Intelligence
-Users select their passport country from 20+ options. All visa results are calculated based on that selection dynamically.
-
-### 3. Dashboard Layout
-- Left sidebar navigation (tablet) / top nav (mobile)
-- Stats row: avg fare, routes, visa-free %, savings
-- Flight results section using real FlightCard components
-- Visa Intelligence section with "Ask AI" shortcuts
-- Right panel: featured deal, passport intel, recent activity
-
-### 4. Domestic Route Detection
-The app automatically detects when both origin and destination are in the same country and responds accordingly instead of showing unnecessary visa info.
 
 ---
 
@@ -103,44 +142,32 @@ Press W to open web
 ```
 
 **Environment Variables Required:**  
-Create a `.env.local` file:
+Create a `.env.local` file (see `.env.example`):
 ```
-EXPO_PUBLIC_GEMINI_API_KEY=your_key_here
+EXPO_PUBLIC_GEMINI_API_KEY=your_gemini_api_key
+EXPO_PUBLIC_GEMINI_MODEL=gemini-2.5-flash
+EXPO_PUBLIC_SCRAPE_DO_TOKEN=your_scrape_do_token
 ```
 
----
+> `EXPO_PUBLIC_` values are bundled into the app. That's fine for this prototype, but before a public launch the Gemini and Scrape.do calls should move behind a backend so the keys stay private.
 
-## 🧱 Challenges Encountered
-
-### 1. Metro Bundler — Dynamic Require Error
-**Problem:** The `i18n-iso-countries` and `airport-codes` packages used dynamic `require()` calls inside loops, which Metro (React Native's bundler) does not support.  
-**Solution:** Removed both packages entirely and replaced them with a comprehensive inline IATA → ISO country code map (200+ airports) and a city/country name map directly in `aiService.ts`.
-
-### 2. Expo Router — Unmatched Route
-**Problem:** After restructuring files, Expo Router showed "Unmatched Route" on the web build.  
-**Solution:** Ensured `app/index.tsx` was the correct entry point, added the required `app/+not-found.tsx` fallback route, and confirmed `"main": "expo-router/entry"` in `package.json`.
-
-### 3. Natural Language Route Parsing
-**Problem:** Users typed routes in many formats (`PHL to AUS`, `fly from Manila to Tokyo`, `I want to go to Japan`) — a single regex couldn't handle all cases.  
-**Solution:** Built a multi-step parser with 4 pattern matchers: IATA pair, "from X to Y", natural language intent, and simple "to [place]" fallback.
-
-### 4. UI Contrast & Readability
-**Problem:** On dark backgrounds, many text elements using muted color tokens were nearly invisible on web.  
-**Solution:** Audited every style and replaced dim `Colors.textMuted` / `Colors.textSub` references with explicit high-contrast hex values across 20+ style rules.
-
-### 5. Domestic vs. International Logic
-**Problem:** Users searching domestic routes (e.g. PHL to AUS — both US airports) were getting no response because the visa lookup returned null for same-country routes.  
-**Solution:** Added a `isDomestic` check comparing `fromCountry === toCountry` before the visa lookup, returning a friendly domestic flight message instead.
+**Regenerating the airport list** (only needed to change which airports are included):
+```bash
+node scripts/build-airports.js
+```
 
 ---
 
 ## 📸 Screenshots
 
-> See `/screenshots` folder for UI screenshots of:
-> - Dashboard view (desktop)
-> - AI chat panel open
-> - Flight cards with visa badges
-> - Passport selector modal
+### Homepage
+![FlightADVSR homepage with the hero, comparison table, and feature cards](screenshots/dashboard.png)
+
+### Trip planner, step 1: Traveler
+![Onboarding step where the traveler picks a passport, existing visas, departure airport, and trip type](screenshots/first-step.png)
+
+### Results and Trip Assistant
+![Results page showing the FlightADVSR Pick, visa and entry checks, travel alerts, and the Trip Assistant chat](screenshots/ai_convo.png)
 
 ---
 
@@ -152,4 +179,4 @@ The experience of shipping a live, working AI-integrated application is somethin
 
 ---
 
-*Built with 💙 in one week | Spring 2026 | FlightAdvsr*
+*Built with 💙 in one week | Spring 2026 | FlightADVSR*
