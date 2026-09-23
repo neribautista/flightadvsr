@@ -22,6 +22,7 @@ import {
   TripType,
 } from '../../types/trip';
 import { COUNTRY_OPTIONS } from '../../data/countries';
+import { searchAirports } from '../../data/airports';
 const BLUE = '#2478f3';
 const NAVY = '#102747';
 const MUTED = '#61718a';
@@ -67,39 +68,6 @@ const tripTypes: {
   {
     label: 'Other',
     value: 'other',
-  },
-];
-
-const originSuggestions: AirportSelection[] = [
-  {
-    code: 'DFW',
-    city: 'Dallas',
-    country: 'United States',
-    label: 'Dallas Fort Worth International Airport (DFW)',
-  },
-  {
-    code: 'AUS',
-    city: 'Austin',
-    country: 'United States',
-    label: 'Austin-Bergstrom International Airport (AUS)',
-  },
-  {
-    code: 'JFK',
-    city: 'New York',
-    country: 'United States',
-    label: 'John F. Kennedy International Airport (JFK)',
-  },
-  {
-    code: 'LAX',
-    city: 'Los Angeles',
-    country: 'United States',
-    label: 'Los Angeles International Airport (LAX)',
-  },
-  {
-    code: 'MNL',
-    city: 'Manila',
-    country: 'Philippines',
-    label: 'Ninoy Aquino International Airport (MNL)',
   },
 ];
 
@@ -165,18 +133,7 @@ export default function TravelerScreen() {
       return [];
     }
 
-    return originSuggestions.filter(
-      (airport) =>
-        airport.label
-          .toLowerCase()
-          .includes(query) ||
-        airport.city
-          .toLowerCase()
-          .includes(query) ||
-        airport.code
-          .toLowerCase()
-          .includes(query),
-    );
+    return searchAirports(query, { limit: 8 });
   }, [originQuery]);
 
   const clearError = (field: FieldName) => {
@@ -509,7 +466,7 @@ export default function TravelerScreen() {
 
                       clearError('origin');
                     }}
-                    placeholder="Search city or airport"
+                    placeholder="Search city, country or airport code"
                     placeholderTextColor="#9ca9ba"
                     autoCapitalize="words"
                   />
@@ -528,7 +485,7 @@ export default function TravelerScreen() {
                         (airport) => (
                           <DropdownOption
                             key={airport.code}
-                            label={airport.label}
+                            label={`${airport.label} · ${airport.city}, ${airport.country}`}
                             selected={false}
                             onPress={() =>
                               selectOrigin(airport)

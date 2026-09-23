@@ -3,7 +3,7 @@ export type CabinClass = 'economy' | 'premium_economy' | 'business' | 'first';
 export type OptimizationPriority = 'best_value' | 'lowest_price' | 'shortest_duration';
 export type DeparturePreference = 'any' | 'morning' | 'afternoon' | 'evening' | 'overnight';
 
-export interface AirportSelection { code: string; city: string; country: string; label: string; }
+export interface AirportSelection { code: string; city: string; country: string; countryCode?: string; label: string; }
 export interface TravelerData { passportCountry: string; passportCode: string; existingVisas: string[]; origin: AirportSelection | null; tripType: TripType | ''; }
 export interface TripDetails { destination: AirportSelection | null; additionalStops: AirportSelection[]; departureDate: string; returnDate: string; tripMode: 'round_trip' | 'one_way'; travelers: number; budget: number; currency: string; notes: string; }
 export interface TripPreferences { cabinClass: CabinClass; preferredAirlines: string[]; avoidedAirlines: string[]; maximumStops: number; maximumLayoverHours: number; checkedBaggage: boolean; flexibleDates: boolean; departurePreference: DeparturePreference; optimizationPriority: OptimizationPriority; accessibilityNeeds: string; includeHotels: boolean; }

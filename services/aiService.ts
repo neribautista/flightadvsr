@@ -1,5 +1,6 @@
 // services/aiService.ts
 import passportIndex from '../data/passportIndex.json';
+import { getAirportByCode } from '../data/airports';
 import type { AirportSelection, JourneyResult, TravelerData, TripDetails, TripPreferences, VisaRequirement } from '../types/trip';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -255,7 +256,7 @@ const COUNTRY_NAME_MAP: Record<string, string> = {
 
 function getCountryFromIATA(iata: string): string | null {
   const code = iata.toUpperCase();
-  const country = IATA_FALLBACK[code];
+  const country = getAirportByCode(code)?.countryCode ?? IATA_FALLBACK[code];
   if (!country) console.warn(`Could not resolve country for IATA code: ${code}`);
   return country ?? null;
 }
@@ -483,6 +484,10 @@ export function resolveCountryCode(
 ): string | null {
   if (!airport) {
     return null;
+  }
+
+  if (airport.countryCode) {
+    return airport.countryCode;
   }
 
   const countryName = airport.country?.trim().toLowerCase();
